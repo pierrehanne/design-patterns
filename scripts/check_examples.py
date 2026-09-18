@@ -50,7 +50,8 @@ for (const value of [VALUES]) {
 '''.replace('VALUES', literals)
         source = tmp / 'decorator_regression.ts'
         source.write_text(original.read_text() + harness)
-        run([compiler, '--strict', '--target', 'ES2022', '--module', 'commonjs', '--outDir', tmp, source])
+        # This temporary harness is compiled independently of the repository project.
+        run([compiler, '--ignoreConfig', '--strict', '--target', 'ES2022', '--module', 'commonjs', '--outDir', tmp, source])
         run(['node', tmp / 'decorator_regression.js'])
     elif language == 'rust':
         harness = '''

@@ -96,7 +96,7 @@ def sources(c):
         stem = Path(path).stem
         commands = {
             'py': f'python3 {path}',
-            'ts': f'npm ci\nnpx tsc --strict --target ES2022 --module commonjs --outDir /tmp/pattern-demo {path}\nnode /tmp/pattern-demo/{stem}.js',
+            'ts': f'npm ci\nnpx tsc --ignoreConfig --strict --target ES2022 --module commonjs --outDir /tmp/pattern-demo {path}\nnode /tmp/pattern-demo/{stem}.js',
             'rs': f'rustc --edition=2021 {path} -o /tmp/pattern-demo\n/tmp/pattern-demo',
             'go': f'go run {path}',
         }
