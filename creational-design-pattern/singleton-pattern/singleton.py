@@ -26,50 +26,40 @@ import threading
 
 
 class ConfigurationManager:
-    """
-    A thread-safe Singleton that manages application configuration.
+    """One process-local configuration instance, initialized before publication.
 
-    Uses double-checked locking to ensure only one instance is created,
-    even when multiple threads attempt to access it simultaneously.
+    The creation lock protects publication; the settings lock protects access.
+    Neither lock turns several separate get/set calls into a transaction.
     """
 
     _instance = None
-    _lock = threading.Lock()  # Ensures thread-safe instantiation
+    _lock = threading.Lock()
 
     def __new__(cls) -> "ConfigurationManager":
-        """
-        Override __new__ to control instance creation.
-        Double-checked locking: first check without lock (fast path),
-        then check again inside lock (safe path).
-        """
-        if cls._instance is None:
-            with cls._lock:
-                # Second check inside lock prevents race condition where
-                # two threads both pass the first check before one acquires the lock.
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
-
-    def __init__(self) -> None:
-        # Prevent re-initialization on subsequent calls to ConfigurationManager()
-        if self._initialized:
-            return
-        self._initialized = True
-        self._settings: dict[str, str] = {}
-        print("[ConfigurationManager] Initialized (this should appear only once)")
+        with cls._lock:
+            if cls._instance is None:
+                instance = super().__new__(cls)
+                instance._settings: dict[str, str] = {}
+                instance._settings_lock = threading.Lock()
+                # Publish only after every field is ready for concurrent callers.
+                cls._instance = instance
+                print("[ConfigurationManager] Initialized (this should appear only once)")
+            return cls._instance
 
     def set(self, key: str, value: str) -> None:
         """Store a configuration value."""
-        self._settings[key] = value
+        with self._settings_lock:
+            self._settings[key] = value
 
     def get(self, key: str, default: str = "") -> str:
         """Retrieve a configuration value with an optional default."""
-        return self._settings.get(key, default)
+        with self._settings_lock:
+            return self._settings.get(key, default)
 
     def all(self) -> dict[str, str]:
-        """Return a copy of all settings."""
-        return dict(self._settings)
+        """Return a snapshot rather than exposing shared mutable state."""
+        with self._settings_lock:
+            return dict(self._settings)
 
 
 # ---------------------------------------------------------------------------

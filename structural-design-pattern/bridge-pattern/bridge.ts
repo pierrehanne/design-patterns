@@ -136,3 +136,6 @@ const channels: MessageChannel[] = [
 for (const ch of channels) {
   console.log(new UrgentNotification(ch).notify("bob", "Deploy failed"));
 }
+
+// Keep this standalone example out of the global script namespace.
+export {};

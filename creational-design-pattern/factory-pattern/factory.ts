@@ -3,6 +3,8 @@
  * ======================
  * Category: Creational Design Pattern
  *
+ * Implementation note: This file demonstrates a simple factory. Canonical Factory Method uses a creator workflow with an overridable construction method.
+ *
  * Intent:
  *   Define an interface for creating objects, but let the factory decide which
  *   concrete class to instantiate. Client code works with the product interface
@@ -60,7 +62,7 @@ type NotificationConstructor = new (...args: any[]) => Notification;
 
 class NotificationFactory {
   // Registry maps channel names to their constructors
-  private static registry: Map<string, NotificationConstructor> = new Map([
+  private static registry: Map<string, NotificationConstructor> = new Map<string, NotificationConstructor>([
     ["email", EmailNotification],
     ["sms", SMSNotification],
     ["push", PushNotification],
@@ -105,3 +107,6 @@ class SlackNotification implements Notification {
 NotificationFactory.register("slack", SlackNotification);
 const slack = NotificationFactory.create("slack", "engineering");
 console.log(slack.send("alice", "Deploy complete!"));
+
+// Keep this standalone example out of the global script namespace.
+export {};

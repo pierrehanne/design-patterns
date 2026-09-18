@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "strict": true,
+    "rootDir": ".",
+    "outDir": ".build/typescript",
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "creational-design-pattern/**/*.ts",
+    "structural-design-pattern/**/*.ts",
+    "behavioral-design-pattern/**/*.ts"
+  ]
+}

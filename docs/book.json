@@ -1,0 +1,554 @@
+[
+  {
+    "slug": "singleton",
+    "title": "Singleton",
+    "family": "Creational",
+    "path": "creational-design-pattern/singleton-pattern/singleton",
+    "intent": "Control the lifetime of one shared instance within a process.",
+    "problem": "Configuration is read by many components. If every component creates its own mutable settings store, updates can diverge. A shared instance makes identity explicit, but it also makes every caller depend on the same lifetime. Ask whether the real requirement is one instance or simply consistent configuration; immutable values passed at startup often solve the latter.",
+    "design": "The configuration manager owns instance creation and exposes get, set, and snapshot operations. Construction must finish before the reference becomes visible to another thread. Protecting creation alone does not protect later mutation. Scope also matters: one instance in a process does not mean one instance across worker processes, containers, or a cluster.",
+    "trace": "Create two configuration references, write through the first, and read through the second. Their identity is equal. In Python, initialization now happens entirely under the creation lock; individual settings operations use a separate lock. The Go demo sends actual pointers from goroutines and compares them, rather than comparing a fragment of their printed representation.",
+    "decision": "Use when a process has a real ownership constraint and a documented shutdown policy. Prefer constructing a service once at the application entry point and injecting it when tests, tenants, or request scopes need isolation. A logger or pool does not automatically need to enforce its own global uniqueness.",
+    "cost": "Global state hides dependencies, makes tests order-dependent, and complicates reloads. A lock makes individual calls safe, not a read-modify-write sequence. Connection cleanup, initialization failure, and configuration reload require their own policies.",
+    "language": "Python uses locks; Go uses sync.Once and an RWMutex; Rust uses OnceLock and Mutex. TypeScript uses a private constructor and a static instance, which applies only within that module/runtime context. Do not infer cross-process guarantees from any of them.",
+    "tests": "Start concurrent callers before the first initialization. Assert identical identity, fully initialized fields, and preservation of every write. Mutate the returned settings snapshot and verify the live store is unchanged.",
+    "exercise": "Replace global access with a Configuration interface injected into two clients. Write a test with two independent configurations. Explain which version better expresses your application lifetime.",
+    "related": [
+      "factory",
+      "builder"
+    ],
+    "flow": [
+      "Caller",
+      "Lifetime boundary",
+      "Shared configuration"
+    ]
+  },
+  {
+    "slug": "factory",
+    "title": "Factory Method & simple factories",
+    "family": "Creational",
+    "path": "creational-design-pattern/factory-pattern/factory",
+    "intent": "Keep callers independent of concrete product construction.",
+    "problem": "Checkout, alerts, and reminders all send notifications. If each chooses email, SMS, or push with its own conditional, a new channel requires coordinated edits. A factory centralizes that selection and gives callers a stable notification interface.",
+    "design": "The implementations here are simple factories: a registry in Python and TypeScript, and a match or switch in Rust and Go. Canonical Factory Method has a creator workflow that calls an overridable construction method, allowing a subclass to choose the product. Both separate creation from use, but a static selector is not the same structure as a polymorphic creator.",
+    "trace": "The caller supplies a channel name. The factory selects a constructor and returns a notification; the caller invokes send without knowing the concrete class. Python and TypeScript then register a Slack notification at runtime. Rust and Go make the supported set explicit in a selection branch.",
+    "decision": "Use a simple factory when a few construction choices need one owner. Use Factory Method when an extensible creator workflow genuinely needs subclasses to supply products. A direct constructor is clearer when there is only one implementation and no meaningful construction policy.",
+    "cost": "A registry moves errors from compile time to startup or runtime. Define what duplicate registration and unknown channels mean. Registration avoids editing the selector, but configuration still changes. Switch-based factories must be edited when new products are added; neither approach eliminates all change.",
+    "language": "Python accepts constructor keyword arguments dynamically. TypeScript expresses a constructor contract but still needs runtime validation for external input. Rust returns trait objects and Go returns interfaces. Those choices trade static knowledge of a concrete type for a shared behavior contract.",
+    "tests": "Cover every registered channel, unknown-channel failure, and the behavior promised by the notification interface. Verify registration deliberately replaces or rejects a duplicate. Test product behavior separately from the selection rule.",
+    "exercise": "Add a creator with a deliver workflow that calls create_notification. Supply two creators with different products, then compare this Factory Method implementation with the current registry.",
+    "related": [
+      "abstract-factory",
+      "strategy"
+    ],
+    "flow": [
+      "Client",
+      "Factory selects product",
+      "Notification.send"
+    ]
+  },
+  {
+    "slug": "abstract-factory",
+    "title": "Abstract Factory",
+    "family": "Creational",
+    "path": "creational-design-pattern/abstract-pattern/abstract_factory",
+    "intent": "Create a consistent family of related products through one boundary.",
+    "problem": "A login form needs a button, checkbox, and text field. Selecting the theme independently for each widget lets a dark button appear beside a light input. The changing unit is a family of products, so selection should happen once at that level.",
+    "design": "A UIFactory exposes a creation operation for every product role. Dark and light factories implement the same contract. The form-building function depends on the factory and product interfaces, keeping concrete theme selection at the composition root. This works because the products share a family convention, not because the pattern can detect every incompatible combination.",
+    "trace": "The demo chooses a dark factory, builds a form through it, and repeats with a light factory. Follow each create call into the concrete factory, then back to the form. The form workflow remains the same while the concrete products differ.",
+    "decision": "Use when products must vary together: platform widgets, related storage adapters, or rendering backends. Prefer configuration values when the difference is only a color or label. Creating a parallel class hierarchy for cosmetic data alone is usually unnecessary.",
+    "cost": "Adding a family is straightforward, but adding a new product role changes the factory contract and every family. A large factory can become a broad dependency. Keep families cohesive, and avoid handing a whole factory to a client that only needs one finished product.",
+    "language": "Python and TypeScript show object interfaces directly. Rust traits and Go interfaces express the same collaboration without requiring class inheritance. The important guarantee is which factory constructs the products, not the surface syntax.",
+    "tests": "Run the same form contract against both factories. Check that every product has the chosen family behavior. When adding a product role, require a test for every family to expose incomplete implementations.",
+    "exercise": "Add a high-contrast family. Then add a slider to every family. Compare the two change sets and explain the extension axis this pattern favors.",
+    "related": [
+      "factory",
+      "bridge"
+    ],
+    "flow": [
+      "Theme selection",
+      "UI factory",
+      "Button + checkbox + text field"
+    ]
+  },
+  {
+    "slug": "builder",
+    "title": "Builder",
+    "family": "Creational",
+    "path": "creational-design-pattern/builder-pattern/builder",
+    "intent": "Accumulate construction choices and validate them at a clear boundary.",
+    "problem": "An HTTP request combines a method, URL, headers, query parameters, body, timeout, retries, and redirect behavior. Long positional constructors obscure intent. A builder names each decision while separating an incomplete configuration from the resulting request.",
+    "design": "The builder stores intermediate values and returns itself from fluent methods. Build checks the example’s construction rules and copies collection fields. A director is an optional recipe for common configurations, such as a JSON API request. A fluent interface alone is not the pattern; the useful boundary is the transition from partial configuration to a usable product.",
+    "trace": "The manual example sets a GET URL, authorization header, pagination, timeout, and retries before building. Director helpers return a configured builder so the caller can add one final choice. The code models a request; it does not execute network I/O or implement retries.",
+    "decision": "Use when construction has meaningful stages, defaults, or invariants. Prefer keyword arguments, a configuration object, or Go functional options for small independent settings. Parameter count is a signal to inspect the API, not a rule that forces a builder.",
+    "cost": "Builders introduce mutable intermediate state. Specify whether reuse preserves previous settings and whether built products share references. The examples’ immutability guarantees differ: Python frozen dataclasses and TypeScript readonly fields do not deeply freeze their dictionaries. The examples also impose a body rule for POST/PUT as a teaching choice, not an HTTP requirement.",
+    "language": "Rust consumes the builder through ownership-based chaining. Python, TypeScript, and Go mutate a reusable builder. Read each build method before assuming identical validation. Query formatting is illustrative and does not replace a URL encoder.",
+    "tests": "Test missing required configuration, default values, and independence from later builder mutations. Test nested collection mutation explicitly before describing a result as immutable. Treat negative timeouts and retry counts as additional validation requirements.",
+    "exercise": "Define a precise request contract, then make validation and snapshot guarantees consistent across all four languages. Decide whether a bodyless POST is valid for your domain.",
+    "related": [
+      "factory",
+      "prototype"
+    ],
+    "flow": [
+      "Configuration steps",
+      "Build + validate",
+      "Request value"
+    ]
+  },
+  {
+    "slug": "prototype",
+    "title": "Prototype",
+    "family": "Creational",
+    "path": "creational-design-pattern/prototype-pattern/prototype",
+    "intent": "Create a new object by copying a configured example.",
+    "problem": "Reports and memos share styles, sections, and metadata. Repeating that setup risks drift. A prototype registry keeps a configured starting point and returns copies for callers to customize. The practical benefit here is consistent defaults; the demo does not measure an expensive construction path.",
+    "design": "A document template supplies clone behavior. A registry selects the prototype by name and creates a copy. Copy semantics are the essential contract: a shallow copy shares nested objects, while a deep copy aims to give mutable nested state independent ownership. Neither strategy is automatically correct for resources such as sockets or database handles.",
+    "trace": "The demo registers report and memo templates, clones reports for two quarters, and changes metadata and sections. It then mutates a deep clone and a shallow clone to show why nested style ownership matters. Trace which references point to the same style object before reading the output.",
+    "decision": "Use when a configured object is a useful reusable starting point and its copy policy is clear. Prefer a constructor or builder when copying would preserve stale identity, secrets, timestamps, or external resource handles.",
+    "cost": "Deep copying can cost more than rebuilding, and graph cycles need deliberate handling. Separate values that should be copied, references that should be shared, and identity that should be regenerated. Do not claim performance savings without measuring representative objects.",
+    "language": "Python makes deep versus shallow copying explicit. Rust Clone follows the implementation of each field; cloning an Rc shares ownership rather than duplicating its target. Go maps and slices and TypeScript nested objects require explicit attention to aliasing.",
+    "tests": "Mutate the clone’s style, sections, and metadata and verify the prototype and sibling clones are unchanged where independence is promised. Also test an unknown registry key and any intentionally shared resource.",
+    "exercise": "Add a document ID and creation timestamp. Design a clone policy that copies content but regenerates identity, and explain why a generic deep copy is insufficient.",
+    "related": [
+      "builder",
+      "flyweight"
+    ],
+    "flow": [
+      "Template registry",
+      "Clone with copy policy",
+      "Independent document"
+    ]
+  },
+  {
+    "slug": "adapter",
+    "title": "Adapter",
+    "family": "Structural",
+    "path": "structural-design-pattern/adapter-pattern/adapter",
+    "intent": "Translate an existing dependency into the interface your application needs.",
+    "problem": "A checkout expects a modern payment processor, but a legacy gateway uses different method names, amount units, and result shapes. Spreading those translations through checkout would couple business logic to the old API.",
+    "design": "The application owns the target interface. An adapter implements it and delegates to the legacy gateway while translating inputs and outputs. Keep business decisions outside this translation boundary. Matching method signatures is only part of compatibility: currency, errors, retry behavior, and identifiers must preserve meaning.",
+    "trace": "Checkout first uses a modern processor, then the legacy gateway wrapped in LegacyPaymentAdapter. Both receive an amount in cents through the target contract. The demo also translates a refund. These processors simulate behavior; their names do not indicate a live payment-provider integration.",
+    "decision": "Use at an integration boundary when you cannot or should not change the existing dependency. Prefer changing an internal interface directly when you own both sides and compatibility has no value. An adapter should remove dependency-specific knowledge from its clients.",
+    "cost": "Translation can silently lose information. Integer-to-floating conversions, incomplete error mappings, and differing transaction semantics deserve explicit tests. An adapter does not make a remote call reliable or make two providers behaviorally equivalent.",
+    "language": "Python and TypeScript use explicit target contracts, Rust uses traits, and Go relies on implicit interface satisfaction. All four demonstrate object composition: the adapter contains the legacy service instead of requiring it to inherit a new base type.",
+    "tests": "Use contract tests against both implementations. Verify units, rounding boundaries, failed charges, unknown transaction IDs, and refunds. Test that unexpected legacy responses fail explicitly rather than being reported as success.",
+    "exercise": "Extend the result contract with a declined payment and a retryable provider failure. Map each legacy response and explain which failures checkout may safely retry.",
+    "related": [
+      "bridge",
+      "facade"
+    ],
+    "flow": [
+      "Checkout contract",
+      "Legacy adapter",
+      "Legacy gateway"
+    ]
+  },
+  {
+    "slug": "bridge",
+    "title": "Bridge",
+    "family": "Structural",
+    "path": "structural-design-pattern/bridge-pattern/bridge",
+    "intent": "Let two dimensions of behavior vary independently.",
+    "problem": "Notifications vary by urgency and by delivery channel. Encoding every combination as a subclass produces RegularEmail, UrgentEmail, UrgentSMS, and more. Adding a channel then multiplies the classes that must be maintained.",
+    "design": "The notification abstraction owns message policy; the channel interface owns delivery. A notification holds a channel and delegates the final send. New notification kinds and new channels can be introduced independently as long as their shared contract remains meaningful.",
+    "trace": "Trace an urgent notification as it formats a message and hands it to SMS or Slack. Then follow the scheduled notification through email. The scheduled example formats a scheduling label; it does not persist a job or run a scheduler. The final loop pairs one notification kind with several channels.",
+    "decision": "Use when two real dimensions change independently. If there is just one interchangeable algorithm, Strategy may be the clearer description. If an existing foreign API must be translated, Adapter better describes the intent.",
+    "cost": "Independent composition creates combinations that may not make domain sense. A channel may have message-length limits, asynchronous behavior, or no scheduling support. Define the smallest honest delivery contract and validate unsupported combinations at a clear boundary.",
+    "language": "Python, TypeScript, Rust, and Go all use composition. Dynamic dispatch expresses the channel choice; language-specific inheritance is not essential. The class-count comparison illustrates growth, but does not imply every combination needs a separate class without this pattern.",
+    "tests": "Exercise a matrix of notification policies and channels. Verify formatting independently of delivery, and test how unsupported capabilities are reported. A recording channel makes message policy easy to test without network calls.",
+    "exercise": "Add a webhook channel and a digest notification independently. Identify whether either addition forces changes to existing implementations and why.",
+    "related": [
+      "adapter",
+      "strategy"
+    ],
+    "flow": [
+      "Notification policy",
+      "Channel contract",
+      "Email / SMS / Slack"
+    ]
+  },
+  {
+    "slug": "composite",
+    "title": "Composite",
+    "family": "Structural",
+    "path": "structural-design-pattern/composite-pattern/composite",
+    "intent": "Apply the same operation to a leaf or a whole tree.",
+    "problem": "A filesystem-like model contains files and directories. A caller that calculates size should not have to distinguish every nesting level. Repeating leaf-versus-container checks outside the model spreads traversal logic throughout the application.",
+    "design": "Files implement operations directly. Directories contain children with the same read-oriented contract and combine their results recursively. Keep operations such as adding a child specific to containers when pretending that a file supports them would weaken the interface.",
+    "trace": "The example builds a project directory with source, tests, documentation, and a root file. Calling size on the root recursively sums child sizes. Display and search follow the same tree structure while producing different results. No actual filesystem is read.",
+    "decision": "Use for a genuine part-whole hierarchy whose members share useful operations: document trees, menus, or expression structures. Prefer ordinary records or a flat list when there is no recursive relationship.",
+    "cost": "Trees require ownership rules. Allowing a directory to contain itself introduces a cycle and can make recursion nonterminating. Shared subtrees can cause double counting. Depth, mutation during traversal, and permission-sensitive aggregation need explicit policies.",
+    "language": "Rust models the closed set of files and directories with an enum, making exhaustive matching natural. The other examples emphasize polymorphic components. These are two ways to express a recursive structure, not a requirement to reproduce a class hierarchy in every language.",
+    "tests": "Check empty directories, nested totals, search matches, and traversal order. Decide whether cycles and shared children are forbidden or detected. Test a deep tree before assuming recursive traversal is safe for untrusted input.",
+    "exercise": "Add symbolic links. Explain why the model is now potentially a graph, and design cycle detection and size semantics before changing traversal.",
+    "related": [
+      "iterator",
+      "visitor"
+    ],
+    "flow": [
+      "Directory",
+      "Child components",
+      "File or nested directory"
+    ]
+  },
+  {
+    "slug": "decorator",
+    "title": "Decorator",
+    "family": "Structural",
+    "path": "structural-design-pattern/decorator-pattern/decorator",
+    "intent": "Add composable behavior around an object through the same interface.",
+    "problem": "A data source needs optional logging, transformation, and compression. A subclass for every combination makes extension expensive. Wrappers allow those behaviors to be selected and ordered at composition time.",
+    "design": "Each decorator implements read and write and holds another data source. A write transforms input before delegating; a read delegates first and reverses that transformation on the returned data. With several wrappers, the inverse operations must run in reverse order for the round trip to hold.",
+    "trace": "The demo wraps a plain source with compression, a Caesar-shift transformation, and logging. Follow the write from the outer layer inward, then follow read back outward. Run-length records now use count:character, so digits, colons, and Unicode characters remain unambiguous. The encoding can expand short or nonrepeating input.",
+    "decision": "Use when independent behaviors need flexible composition without changing the component contract. Prefer one ordinary function when there is only one fixed transformation. Wrapper order is part of the API and should be visible at the composition root.",
+    "cost": "Layers complicate debugging, error handling, and performance measurement. The Caesar shift is a reversible teaching transform, not secure encryption. The decoder expects trusted output from the encoder; production decoding needs resource limits and a structured error contract across languages. Compression followed by encryption is a different pipeline from encryption followed by compression.",
+    "language": "TypeScript iterates Unicode code points for the encoding; Rust uses chars and Go uses runes. Python strings also expose code points. These are not grapheme clusters, but each encoding preserves the original string for valid text round trips.",
+    "tests": "Assert read(write(value)) equals value for empty input, repeated characters, literal digits, colons, newlines, emoji, and long runs. Test each wrapper and supported ordering separately. Check malformed records and decompression size limits before accepting external input.",
+    "exercise": "Add a checksum wrapper. Decide whether it covers original data or encoded data, and show how moving the wrapper changes which failures it detects.",
+    "related": [
+      "proxy",
+      "chain-of-responsibility"
+    ],
+    "flow": [
+      "Logging wrapper",
+      "Transform wrapper",
+      "Compression → source"
+    ]
+  },
+  {
+    "slug": "facade",
+    "title": "Facade",
+    "family": "Structural",
+    "path": "structural-design-pattern/facade-pattern/facade",
+    "intent": "Give callers a focused entry point into a larger subsystem.",
+    "problem": "Placing an order coordinates inventory, payment, shipping, and notification. Making every caller understand that sequence creates duplicated workflow knowledge and makes internal service changes expensive.",
+    "design": "OrderFacade exposes a place-order operation and coordinates the subsystem on the caller’s behalf. The facade simplifies access; it need not hide every lower-level API. Its boundary should correspond to a coherent use case instead of becoming a catch-all service for the whole application.",
+    "trace": "The successful demo checks inventory, processes payment, arranges shipping, and emits a notification. A second request exercises the out-of-stock path. Follow the order of calls: it determines which side effects may already have happened if a later step fails.",
+    "decision": "Use when several low-level operations form a stable client-facing use case. Prefer direct calls when a caller needs only one simple operation. A facade can be a good place to separate an external API from changing internal services.",
+    "cost": "A convenient method is not an atomic transaction. If payment succeeds and shipping fails, recovery requires explicit compensation or durable workflow state. Retries need idempotency at each side-effect boundary. The local demo services do not provide distributed consistency guarantees.",
+    "language": "All four implementations preserve orchestration with ordinary composition. Language-specific exceptions, result values, or errors affect how partial failure should be represented. A printed success message is not evidence of an external durable operation.",
+    "tests": "Inject controlled service failures at every stage. Assert the resulting order status, which operations ran, and what recovery is required. Cover out-of-stock behavior and repeated requests with the same operation identifier.",
+    "exercise": "Design an order state record and recovery path for shipping failure after payment. Identify which steps are retryable and which need compensation.",
+    "related": [
+      "adapter",
+      "mediator"
+    ],
+    "flow": [
+      "Place order",
+      "Inventory → payment → shipping",
+      "Notification + result"
+    ]
+  },
+  {
+    "slug": "flyweight",
+    "title": "Flyweight",
+    "family": "Structural",
+    "path": "structural-design-pattern/flyweight-pattern/flyweight",
+    "intent": "Share repeated intrinsic data while keeping per-instance state separate.",
+    "problem": "A particle system contains many fire, smoke, and spark particles. Sprite, animation, and base color repeat, while position, scale, and opacity vary. Duplicating the repeated portion can waste memory when that portion is substantial.",
+    "design": "A particle-type factory interns shared descriptors. Each particle holds a descriptor reference plus its own extrinsic state. The shared object should be immutable or otherwise protected from changes that would affect every particle. The factory key must include everything that defines descriptor identity.",
+    "trace": "The example creates many particles while reusing a small number of type descriptors. Rendering combines the shared descriptor with each particle’s coordinates and visual parameters. The demo stores descriptor strings; it does not load sprite images or benchmark actual texture memory.",
+    "decision": "Use after measuring meaningful duplication in a large object population. Prefer straightforward objects when data is small or the number of distinct types approaches the number of instances. Sharing has lookup and lifetime costs of its own.",
+    "cost": "An incomplete cache key can return a fire descriptor with the wrong color or animation. An unbounded factory retains every distinct type indefinitely. Memory estimates must include references, hash tables, strings, and allocator overhead, not just the count of descriptor objects.",
+    "language": "Rust uses shared ownership for descriptors, while the other languages use object references or pointers. Shared ownership is not the same as safe shared mutation. Inspect key construction in each example before treating it as a general-purpose interning API.",
+    "tests": "Assert repeated equivalent requests return the same descriptor and differing descriptors do not collide. Mutating one particle’s position must not affect its neighbors. Measure retained memory using realistic descriptor sizes and type distributions.",
+    "exercise": "Generate a workload with nearly all unique types. Compare memory and time with a version that stores descriptors directly, then propose an eviction or ownership policy.",
+    "related": [
+      "prototype",
+      "proxy"
+    ],
+    "flow": [
+      "Descriptor factory",
+      "Shared particle type",
+      "Many independent particles"
+    ]
+  },
+  {
+    "slug": "proxy",
+    "title": "Proxy",
+    "family": "Structural",
+    "path": "structural-design-pattern/proxy-pattern/proxy",
+    "intent": "Control access to a service while preserving its client interface.",
+    "problem": "A weather client wants forecasts without paying the cost of every repeated lookup. Another caller must prove permission before accessing the service. Both concerns can be placed in a substitute object that mediates access to the real service.",
+    "design": "A caching proxy checks stored values and their freshness before delegating. An access-control proxy checks credentials before forwarding. Both expose the weather contract, but their purpose is access policy rather than format translation. These policies can be composed when their ordering is deliberate.",
+    "trace": "The cache demo requests one city twice and another city once, then inspects the real service’s call count. The access-control demo accepts one sample key and rejects another. Weather results and credentials are local fixtures, not live service data or a deployable authentication system.",
+    "decision": "Use for lazy initialization, caching, authorization, or remote access around a stable service contract. Prefer explicit application logic when the policy cannot preserve that contract, for example when stale data must be visibly distinguished from fresh data.",
+    "cost": "Cache keys must include every result-affecting parameter and security scope. TTL alone does not bound cache size or prevent simultaneous misses. Returning a mutable cached object can let a caller change later results. Authorization should occur before serving user-specific cached data.",
+    "language": "Time and mutation are expressed differently across languages. Rust’s borrowing makes cache mutation explicit; dynamic languages still need ownership rules. A monotonic clock is generally a better source for elapsed freshness than wall-clock timestamps.",
+    "tests": "Use a fake clock and a counting service. Cover a hit, a miss, expiry, different cities, and denied access. Assert denied requests do not call the service, and test whether returned values can corrupt cached state.",
+    "exercise": "Add a maximum cache size and concurrent-request coalescing. Specify what happens when refresh fails and whether callers may receive stale data.",
+    "related": [
+      "decorator",
+      "flyweight"
+    ],
+    "flow": [
+      "Client",
+      "Cache or access policy",
+      "Weather service"
+    ]
+  },
+  {
+    "slug": "chain-of-responsibility",
+    "title": "Chain of Responsibility",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/chain-of-responsibility-pattern/chain_of_responsibility",
+    "intent": "Route a request through ordered handlers until a policy accepts it.",
+    "problem": "Support tickets range from routine password resets to critical outages. If the sender chooses the exact support team, routing policy leaks into every producer. A chain lets the sender submit once while handlers decide whether to act or pass the request onward.",
+    "design": "Each handler owns a narrow decision and a reference to its successor. The support example stops at the first handler that accepts the ticket. Middleware pipelines are related, but may deliberately run every stage; always state which continuation rule the chain uses.",
+    "trace": "The demo wires AutoResponder, Level1, Level2, and Manager, then sends tickets with increasing priority through the head. Follow a critical ticket through the unsuccessful decisions before the manager handles it. The returned ticket records which handler took responsibility.",
+    "decision": "Use when ordering and routing need to change independently of senders. Prefer a direct lookup table for a fixed one-to-one mapping, or a simple conditional when the policy is small and stable.",
+    "cost": "Order is observable behavior: a broad early handler can shadow every later handler. Define what happens if nobody handles a request. Reject cyclic chains or bound traversal. Async chains additionally require timeout and cancellation ownership.",
+    "language": "The languages express next-handler ownership with references, pointers, or trait objects. Those mechanics should support the same rule: forward only when this handler declines. Avoid accidentally sharing mutable ticket state between concurrent requests.",
+    "tests": "Exercise each priority, the no-handler case, and a deliberately reordered chain. Verify a request is handled once in this model and that later handlers do not receive it after acceptance.",
+    "exercise": "Add a specialist billing handler. Decide whether it belongs before or after severity routing, and show an ambiguous ticket that forces you to document precedence.",
+    "related": [
+      "command",
+      "decorator"
+    ],
+    "flow": [
+      "Auto responder",
+      "Level 1 → Level 2",
+      "Manager"
+    ]
+  },
+  {
+    "slug": "command",
+    "title": "Command",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/command-pattern/command",
+    "intent": "Turn an action into a value with an explicit execution lifecycle.",
+    "problem": "A text editor needs undo and redo. A bare insert call changes the document but leaves no object describing the action. A command captures the receiver, arguments, and information needed to reverse a particular edit.",
+    "design": "Insert, delete, and replace commands implement execute and undo. TextEditor is the invoker: it executes commands, records history, and manages a redo stack. TextDocument is the receiver that actually edits content. A new edit after undo clears the redo branch because the document history has diverged.",
+    "trace": "Follow insertion of Hello World, the comma, and an exclamation mark, then a replacement. Undo moves commands from history to redo while reversing their effects; redo executes them again. Delete stores removed content so undo can restore it. The exact demo sequence differs slightly between languages.",
+    "decision": "Use when actions need queuing, history, delayed execution, or composition. Prefer a function or closure for a simple callback that has no independent lifecycle. A command object need not support undo if its domain cannot reverse the action.",
+    "cost": "Undo assumes the receiver still has the state expected by the command. External concurrent edits invalidate stored positions. Durable commands need stable IDs, serialization, and retry semantics. Reversing a local edit is not equivalent to rolling back a payment or distributed transaction.",
+    "language": "Rust uses Rc<RefCell> for shared document access in a single-threaded example. Rust string offsets and Go string slicing use byte positions; Python indices and TypeScript UTF-16 indexing have different text semantics. ASCII demo positions should not be generalized to arbitrary user-visible characters.",
+    "tests": "Assert document content after execute, undo, and redo, including a new edit after undo. Test empty history and captured deleted content. Define invalid position behavior and Unicode indexing before accepting arbitrary edits.",
+    "exercise": "Implement a macro command containing three edits. Decide how to recover if the second edit fails, and test that history remains consistent.",
+    "related": [
+      "memento",
+      "chain-of-responsibility"
+    ],
+    "flow": [
+      "Editor invoker",
+      "Command + history",
+      "Text document"
+    ]
+  },
+  {
+    "slug": "interpreter",
+    "title": "Interpreter",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/interpreter-pattern/interpreter",
+    "intent": "Evaluate a small language through a tree that mirrors its grammar.",
+    "problem": "An application needs arithmetic rules that can be composed at runtime. Hard-coded branches for every expression become unwieldy. Representing the expression as data allows each grammar element to define its own meaning.",
+    "design": "Number nodes return a value. Addition, subtraction, and multiplication nodes evaluate their children and combine the results. The tree captures grouping directly. A parser is a separate concern: these examples construct trees programmatically and do not tokenize user-provided expressions or implement textual operator precedence.",
+    "trace": "Trace (3 + 5) × 2 from the multiplication root to its number leaves. The addition child returns eight, and multiplication returns sixteen. The other demo trees produce four, fifty, and fourteen. Parent-child structure determines evaluation order.",
+    "decision": "Use for a small, controlled grammar with clear semantics. Prefer a standard parser or established expression engine for a large language. Never substitute arbitrary eval execution for a designed language boundary.",
+    "cost": "Each new grammar form needs semantics and tests. Deep trees can exhaust the call stack; expensive expressions need evaluation budgets. Numeric overflow, division by zero, variable lookup, and type coercion are domain decisions that this small arithmetic model does not settle.",
+    "language": "Rust uses an enum for a closed set of expression variants. Python, TypeScript, and Go express expression behavior with polymorphic objects or interfaces. Both approaches implement the same recursive interpretation; choose based on how the grammar is expected to grow.",
+    "tests": "Assert all four demo results and nested grouping. If variables are added, test missing bindings and scope. If input parsing is added, test malformed tokens separately from evaluation.",
+    "exercise": "Add variables and a context map without changing existing number semantics. Then add division and specify its behavior for zero and nonintegral results.",
+    "related": [
+      "composite",
+      "visitor"
+    ],
+    "flow": [
+      "Expression tree",
+      "Recursive interpretation",
+      "Numeric result"
+    ]
+  },
+  {
+    "slug": "iterator",
+    "title": "Iterator",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/iterator-pattern/iterator",
+    "intent": "Separate traversal state from the collection being traversed.",
+    "problem": "A social network supports direct friends, breadth-first reachability, and mutual friends. Exposing its adjacency map forces every caller to understand storage and reproduce traversal rules. An iterator gives callers a sequence while keeping traversal decisions local.",
+    "design": "Each traversal object maintains the state needed for its next result. Breadth-first traversal uses a queue and a visited set so cycles do not revisit users forever. A collection can offer several traversal strategies without changing the consumer’s loop.",
+    "trace": "The demo builds a small friendship graph and iterates Alice’s friends, everyone reachable from Alice, and mutual friends of selected pairs. Follow how BFS expands neighbors and marks users visited. Check whether the starting user is included rather than assuming every traversal has identical semantics.",
+    "decision": "Use when a collection has meaningful custom traversal or should stream results lazily. Prefer the built-in iterator of a list or map when it already provides the desired contract. Creating an iterator class is not a goal by itself.",
+    "cost": "Define traversal order and mutation policy. A live iterator can observe changing structure; a snapshot costs memory but is stable. Graph BFS uses memory proportional to the frontier and visited vertices. A lazy API can still perform expensive work per next call.",
+    "language": "Python follows __iter__/__next__, TypeScript Symbol.iterator, and Rust the Iterator trait. The Go example uses HasNext/Next for explicit teaching; modern Go also supports range over iterator functions. This is one implementation style, not the only Go iteration model.",
+    "tests": "Test cycles, disconnected nodes, an empty neighborhood, and termination. Check that independent iterators maintain separate positions. Decide whether ordering is guaranteed before asserting a particular sequence.",
+    "exercise": "Add a depth-limited BFS iterator. Test that it never yields a user beyond the limit and explain the memory cost of its visited set.",
+    "related": [
+      "composite",
+      "strategy"
+    ],
+    "flow": [
+      "Social graph",
+      "Traversal state + visited set",
+      "Sequence of users"
+    ]
+  },
+  {
+    "slug": "mediator",
+    "title": "Mediator",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/mediator-pattern/mediator",
+    "intent": "Put coordination rules in a dedicated object instead of every participant.",
+    "problem": "If each chat user knows every other user, joining, leaving, broadcasting, and private messaging spread routing logic across participants. A shared coordinator lets users depend on one collaboration contract.",
+    "design": "Users submit messages to a mediator. ChatRoom owns membership and routing, delivering to the appropriate recipients. Participants handle their own behavior; the mediator decides how their interactions fit together. Centralizing coordination reduces direct references but does not eliminate system complexity.",
+    "trace": "The demo joins users to a room and routes public and private messages through it. Trace the sender’s call to the room and the room’s recipient selection. This is an in-memory object collaboration, without sockets, persistent delivery, or cross-process membership.",
+    "decision": "Use for cohesive interactions such as a dialog’s controls or a workflow’s cooperating components. Prefer direct collaboration when two objects already have a simple stable relationship. Do not route unrelated application concerns through one universal mediator.",
+    "cost": "A mediator can grow into a large object with too much business logic. Keep routing policy separate from participants’ domain responsibilities. Real messaging requires identity, authorization, disconnect handling, backpressure, and a delivery policy.",
+    "language": "Ownership and references differ across implementations, but each preserves the same dependency direction: participants know the mediator rather than all peers. Be alert to reference cycles if the room and users keep strong references to one another.",
+    "tests": "Test broadcast recipients, private routing, unknown recipients, and duplicate membership. Decide whether the sender receives its own message and what leaving the room means for future delivery.",
+    "exercise": "Add channels inside a room. Write the membership and routing rules first, then decide whether one mediator remains cohesive or should delegate channel management.",
+    "related": [
+      "observer",
+      "facade"
+    ],
+    "flow": [
+      "User sends",
+      "Chat room routes",
+      "Recipient users"
+    ]
+  },
+  {
+    "slug": "memento",
+    "title": "Memento",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/memento-pattern/memento",
+    "intent": "Restore state from a snapshot while keeping ownership of that state clear.",
+    "problem": "A game character needs checkpoints before risky actions. A save manager should store and select saves without duplicating the character’s restoration logic. The character should define what constitutes a consistent restorable state.",
+    "design": "The originator creates a memento containing a snapshot. The caretaker stores mementos and later returns one to the originator for restoration. The conceptual boundary is opaque state, although the example languages differ in how strongly they enforce privacy. A snapshot must be independent of later mutations to the live object.",
+    "trace": "GameCharacter creates saves as its health, level, position, and inventory evolve. SaveManager keeps the history and selects a prior checkpoint. Follow a mutable inventory item through save and restore to see whether the copy policy isolates it.",
+    "decision": "Use when restoring a bounded local state is simpler than constructing inverse operations. Prefer Command when operation history matters and actions have reliable inverses. The two can be combined: a command may capture a memento before a complex edit.",
+    "cost": "Snapshots consume storage proportional to state size and retention count. Public fields can weaken encapsulation. A restored object may be incompatible with current external state, and persisted snapshots need versioning. Capturing local state does not implement database rollback or undo external side effects.",
+    "language": "Python conventions, TypeScript access modifiers, Rust module privacy, and Go exported fields offer different encapsulation guarantees. Inspect actual field visibility and copy behavior rather than assuming the pattern name enforces opacity.",
+    "tests": "Save, mutate every relevant field, restore, and compare the complete character state. Verify that later inventory changes do not alter an existing save. Test unknown save selection and define whether save history is bounded.",
+    "exercise": "Introduce a second schema version with a new character attribute. Design a migration for old saves and a retention policy for a long-running game.",
+    "related": [
+      "command",
+      "prototype"
+    ],
+    "flow": [
+      "Character originator",
+      "Snapshot",
+      "Save manager caretaker"
+    ]
+  },
+  {
+    "slug": "observer",
+    "title": "Observer",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/observer-pattern/observer",
+    "intent": "Notify interested dependents when a subject changes.",
+    "problem": "A stock exchange feeds a dashboard, mobile alerts, and a trade log. Directly naming every consumer inside the exchange makes it responsible for all presentation concerns. A subscription contract lets consumers come and go independently.",
+    "design": "The subject stores observers and calls their update behavior when a price changes. Observers decide what to do with the notification. This is usually synchronous in an in-process implementation, so notification ordering and failures are part of the subject’s observable behavior.",
+    "trace": "The exchange updates a symbol’s price and notifies its subscribers. Each consumer reacts differently to the same change. Follow registration, a price update, and removal of a subscriber to understand the lifetime of the relationship.",
+    "decision": "Use for one-to-many local notifications where the producer should not depend on concrete consumers. Prefer an explicit call when there is only one required collaborator and its result is part of the operation’s success contract.",
+    "cost": "Subscriptions can retain objects longer than intended. Slow callbacks add latency; exceptions can prevent later observers from running unless a policy isolates them. Reentrant updates and unsubscribe-during-notification need defined behavior. An in-memory observer list does not provide the durability or delivery guarantees of a message broker.",
+    "language": "Python’s Protocol, TypeScript interfaces, Rust traits, and Go interfaces express the subscriber contract. Storage and borrowing rules shape how safely observers can be added or removed during delivery. Concurrency is an additional design concern, not an automatic property of Observer.",
+    "tests": "Test subscribe, notify, unsubscribe, duplicate subscriptions, and callback failure. Decide whether iteration uses a snapshot when callbacks modify subscriptions. Check that removed observers can be released.",
+    "exercise": "Make notifications asynchronous with a bounded queue. Specify ordering, overflow, cancellation, and shutdown behavior before choosing an implementation.",
+    "related": [
+      "mediator",
+      "strategy"
+    ],
+    "flow": [
+      "Stock exchange",
+      "Subscriber contract",
+      "Dashboard + alerts + log"
+    ]
+  },
+  {
+    "slug": "state",
+    "title": "State",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/state-pattern/state",
+    "intent": "Let an object’s lifecycle determine which operations are meaningful.",
+    "problem": "A document can be draft, under review, published, or archived. When every method repeats conditions on the current status, transition rules become scattered and can disagree. State localizes behavior associated with each stage.",
+    "design": "The document delegates actions to its current state. A successful transition replaces that state; unsupported actions are rejected according to the example’s policy. The design question is which transitions are valid and who owns them. Classes are one representation of the transition model, not the model itself.",
+    "trace": "Follow the document from drafting through review and publication to archival, including attempts to perform actions that are not allowed. Trace both the state name and any content changes. Review the implementation before inferring that every action can be reversed.",
+    "decision": "Use when behavior varies substantially by lifecycle stage and transitions deserve explicit modeling. Prefer an enum and a transition function when the graph is small. A numerical threshold on the number of states is not a useful design rule.",
+    "cost": "Transitions can have side effects that fail halfway through. In concurrent systems, validate the expected prior state atomically to avoid conflicting updates. Persisting only an in-memory state object is insufficient for durable workflows. Logs should explain rejected and successful transitions.",
+    "language": "Rust uses an enum-based model while the object-oriented examples use state objects. Exhaustive matching is valuable for a closed state set; polymorphism can help when behaviors are independently extensible. Strategy looks similar but represents a caller-selected algorithm rather than lifecycle progression.",
+    "tests": "Build a transition table and test every state/action pair, including forbidden edges. Assert both state and data after failure. Add concurrency tests if two actors may transition the same persisted document.",
+    "exercise": "Add a rejected-review path back to draft. Define edit permissions and version changes, then test two reviewers acting on the same revision.",
+    "related": [
+      "strategy",
+      "command"
+    ],
+    "flow": [
+      "Draft",
+      "Review → published",
+      "Archived"
+    ]
+  },
+  {
+    "slug": "strategy",
+    "title": "Strategy",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/strategy-pattern/strategy",
+    "intent": "Make an algorithm interchangeable behind a stable contract.",
+    "problem": "A payment workflow can use a card, PayPal, or cryptocurrency. Keeping every implementation inside the workflow mixes orchestration with provider-specific behavior. Strategy gives the workflow one payment operation while allowing the caller to select an implementation.",
+    "design": "PaymentContext holds a PaymentStrategy and delegates payment to it. Concrete strategies contain the alternative behavior. Selection belongs at a boundary that knows the user or configuration choice; the context should not reconstruct the same selection conditional internally.",
+    "trace": "The demo creates payment strategies and changes the context’s selection between payments. Follow one call from context to concrete strategy and note what remains stable for the caller. The output describes simulated payments, with no external transaction or settlement.",
+    "decision": "Use when alternatives share a real contract and evolve independently. Prefer a function parameter for small stateless algorithms. Keep a simple conditional when there are only a few stable cases and extracting objects would add more navigation than clarity.",
+    "cost": "A common method signature can conceal incompatible semantics. Providers may differ in settlement, reversibility, authentication, and failure modes. Strategy does not make those differences disappear. Avoid mutable strategy replacement while another request is using the same context.",
+    "language": "Python and TypeScript can often express small strategies as callables. Rust can choose generic static dispatch or trait objects for runtime selection; this example uses trait objects. Go interfaces keep the required behavior small.",
+    "tests": "Use shared contract tests for every strategy, then strategy-specific tests for exceptional behavior. Verify the context forwards the correct amount and does not depend on concrete types. Decide how unknown selection and missing strategy are reported.",
+    "exercise": "Replace the class-based strategy with a function where possible. Then add a stateful provider and explain when an object becomes useful again.",
+    "related": [
+      "state",
+      "bridge"
+    ],
+    "flow": [
+      "Client chooses",
+      "Payment context",
+      "Selected payment algorithm"
+    ]
+  },
+  {
+    "slug": "template-method",
+    "title": "Template Method",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/template-pattern/template",
+    "intent": "Keep a workflow’s sequence fixed while allowing selected steps to vary.",
+    "problem": "CSV, JSON, and database data mining all read, parse, analyze, and report. Reimplementing the whole sequence for each source invites subtle differences. A shared workflow can own the invariant sequence while source-specific steps supply the variation.",
+    "design": "DataMiner’s template operation invokes steps in a defined order. Concrete miners implement reading, parsing, analysis, and reporting; the shared template owns their order rather than their bodies. Optional hooks offer carefully bounded customization. The base workflow calls the specialized steps, inverting the usual caller relationship.",
+    "trace": "Run the different miners and follow their source-specific read and parse operations through its own analysis and reporting, invoked by the shared workflow. Inputs are illustrative; the database miner does not establish a production database integration. Look for hooks that execute around the core sequence.",
+    "decision": "Use when several implementations really share the same stable ordering. Prefer Strategy or composed functions when steps must be freely rearranged or selected at runtime. Inheritance is a commitment to a shared lifecycle, not just a shortcut for code reuse.",
+    "cost": "An overly broad base class creates hidden coupling between steps. Subclasses can violate assumptions unless preconditions and postconditions are explicit. Define cleanup when a middle step fails and decide whether hooks may abort the workflow.",
+    "language": "Python and TypeScript demonstrate base-class customization. Rust uses trait default methods, and Go composes interfaces and optional hooks. The algorithm skeleton can be preserved without inheritance syntax.",
+    "tests": "Record the step sequence and assert its order for every miner. Test empty and malformed input, analysis failures, and cleanup. Verify that hooks cannot silently skip required validation.",
+    "exercise": "Add a streaming data source. Decide whether the existing whole-dataset skeleton still fits or whether the abstraction should change to an iterator pipeline.",
+    "related": [
+      "strategy",
+      "facade"
+    ],
+    "flow": [
+      "Read",
+      "Parse → analyze",
+      "Generate report"
+    ]
+  },
+  {
+    "slug": "visitor",
+    "title": "Visitor",
+    "family": "Behavioral",
+    "path": "behavioral-design-pattern/visitor-pattern/visitor",
+    "intent": "Add operations across a stable family of element types.",
+    "problem": "A document contains paragraphs, images, and tables. Exporting each to HTML, Markdown, and plain text can clutter every element with unrelated formatting logic. Visitor groups one operation’s behavior in one object.",
+    "design": "Elements expose accept(visitor). Each concrete element calls the visitor method for its own type, and each visitor supplies behavior for the complete element family. This double dispatch chooses behavior based on both element and operation. The design favors adding operations over adding element types.",
+    "trace": "The demo builds one document and passes HTML, Markdown, and plain-text exporters over it. Trace Paragraph.accept into visit_paragraph, then compare that with a table visit. The same structure is reused while the formatting operation changes.",
+    "decision": "Use for a relatively stable syntax tree or document model with many evolving operations. Prefer methods on the elements when new element types are frequent and operations are stable. For a small closed enum, pattern matching may express the operation more directly.",
+    "cost": "A new element type requires updating the visitor contract and every visitor. Exporters may need internal details that weaken encapsulation. The demo HTML and Markdown formatters are illustrative: they do not establish a complete escaping, sanitization, or safe-URL policy for untrusted content.",
+    "language": "Interfaces and traits express the visiting contract in each language. TypeScript examples are now modules so names such as Element do not merge with browser globals. Double dispatch is about selecting behavior, not about a required inheritance hierarchy.",
+    "tests": "Cover every element/visitor combination, empty tables, and formatting boundaries. Before rendering untrusted content, add tests for HTML metacharacters, attribute quoting, Markdown delimiters, and disallowed URL schemes.",
+    "exercise": "Add a word-count visitor without changing elements. Then add a code-block element and record every required edit. Use the comparison to evaluate the extension tradeoff.",
+    "related": [
+      "composite",
+      "interpreter"
+    ],
+    "flow": [
+      "Document element",
+      "accept(visitor)",
+      "Format-specific visit method"
+    ]
+  }
+]

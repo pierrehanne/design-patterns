@@ -165,3 +165,6 @@ editor.redo();
 console.log("\n=== Delete and undo ===");
 editor.execute(new DeleteCommand(doc, 0, 5));
 editor.undo();
+
+// Keep this standalone example out of the global script namespace.
+export {};

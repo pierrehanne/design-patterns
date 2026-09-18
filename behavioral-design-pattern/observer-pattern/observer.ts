@@ -129,3 +129,6 @@ function main(): void {
 }
 
 main();
+
+// Keep this standalone example out of the global script namespace.
+export {};

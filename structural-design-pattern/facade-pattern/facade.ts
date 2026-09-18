@@ -160,3 +160,6 @@ const result2 = facade.placeOrder(
   "LA, CA"
 );
 console.log("Order result:", result2);
+
+// Keep this standalone example out of the global script namespace.
+export {};

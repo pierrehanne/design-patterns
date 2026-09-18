@@ -1,0 +1,14 @@
+{
+  "name": "design-patterns-field-guide",
+  "private": true,
+  "version": "1.0.0",
+  "description": "92 standalone design pattern examples and an engineering field guide",
+  "scripts": {
+    "check:typescript": "python3 scripts/check_examples.py --language typescript",
+    "build:docs": "python3 scripts/build_site.py",
+    "check:docs": "python3 scripts/check_site.py"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

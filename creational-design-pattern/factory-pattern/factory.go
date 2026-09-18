@@ -2,6 +2,8 @@
 // ======================
 // Category: Creational Design Pattern
 //
+// Implementation note: This file demonstrates a simple factory. Canonical Factory Method uses a creator workflow with an overridable construction method.
+//
 // Intent:
 //   Define an interface for creating objects, but let the factory decide which
 //   concrete type to instantiate. Client code works with the interface and

@@ -85,14 +85,14 @@ class CompressionDecorator implements DataSource {
   }
 
   private rleEncode(data: string): string {
-    if (!data) return "";
+    const chars = Array.from(data);
     const result: string[] = [];
     let count = 1;
-    for (let i = 1; i <= data.length; i++) {
-      if (i < data.length && data[i] === data[i - 1]) {
+    for (let i = 1; i <= chars.length; i++) {
+      if (i < chars.length && chars[i] === chars[i - 1]) {
         count++;
       } else {
-        result.push(count > 1 ? `${count}${data[i - 1]}` : data[i - 1]);
+        result.push(`${count}:${chars[i - 1]}`);
         count = 1;
       }
     }
@@ -100,16 +100,19 @@ class CompressionDecorator implements DataSource {
   }
 
   private rleDecode(data: string): string {
+    const chars = Array.from(data);
     const result: string[] = [];
-    let num = "";
-    for (const c of data) {
-      if (c >= "0" && c <= "9") {
-        num += c;
-      } else {
-        const count = num ? parseInt(num) : 1;
-        result.push(c.repeat(count));
-        num = "";
+    let position = 0;
+    while (position < chars.length) {
+      let num = "";
+      while (position < chars.length && /^[0-9]$/.test(chars[position])) {
+        num += chars[position++];
       }
+      const count = Number(num);
+      if (chars[position++] !== ":" || !Number.isSafeInteger(count) || count < 1 || position >= chars.length) {
+        throw new Error("Invalid run-length record");
+      }
+      result.push(chars[position++].repeat(count));
     }
     return result.join("");
   }
@@ -157,3 +160,6 @@ console.log("\nReading back:");
 const restored = decorated.read(processed);
 console.log(`Restored:  ${restored}`);
 console.log(`Match:     ${data === restored}`);
+
+// Keep this standalone example out of the global script namespace.
+export {};

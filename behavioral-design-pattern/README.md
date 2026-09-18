@@ -1,5 +1,7 @@
 # Behavioral Design Patterns
 
+For implementation walkthroughs, failure modes, comparisons, and exercises, read the [field guide](https://pierrehanne.github.io/design-patterns/).
+
 ## What Are Behavioral Patterns?
 
 Behavioral patterns deal with **how objects communicate and distribute responsibility**. They help you:
@@ -149,7 +151,7 @@ exchange.unsubscribe(old_observer)  ← Remove at runtime
 
 - **Event listeners** in JavaScript (addEventListener)
 - **Reactive frameworks** (React state, Vue reactivity, RxJS)
-- **Message brokers** (Kafka topics, Redis pub/sub)
+- **Related distributed systems** (Kafka topics, Redis pub/sub) add delivery and concurrency semantics beyond this in-process Observer example
 - **MVC architecture** (Model notifies Views)
 
 ### Observer vs Mediator
@@ -379,12 +381,12 @@ DataMiner (base)
 ├── mine()  ← TEMPLATE METHOD (calls steps in order, DON'T override)
 │   ├── readData()      ← abstract (subclass MUST override)
 │   ├── parseData()     ← abstract (subclass MUST override)
-│   ├── analyzeData()   ← concrete (shared implementation)
-│   └── generateReport()← concrete (shared implementation)
+│   ├── analyzeData()   ← abstract (subclass implements)
+│   └── generateReport()← abstract (subclass implements)
 │
-├── CSVMiner (override readData + parseData)
-├── JSONMiner (override readData + parseData)
-└── DatabaseMiner (override readData + parseData)
+├── CSVMiner (implement read, parse, analyze, report)
+├── JSONMiner (implement read, parse, analyze, report)
+└── DatabaseMiner (implement read, parse, analyze, report)
 ```
 
 ### The Hollywood Principle
@@ -434,7 +436,7 @@ You have a fixed set of element types (Paragraph, Image, Table) and want to add 
 
 ### Adding New Operations
 
-Just create a new Visitor. **No changes to element classes.** This is the opposite of normal OOP where adding methods is easy but adding types requires changing every class.
+Just create a new Visitor. **No changes to element classes.** This favors adding operations. With ordinary methods on elements, adding a type is often easier, while adding an operation may require changing every element type.
 
 ### Trade-off
 
@@ -523,7 +525,7 @@ Each language has its own iterator protocol:
 | Python | `__iter__` / `__next__` | Raise `StopIteration` when done |
 | TypeScript | `Symbol.iterator` | Return `{ value, done }` objects |
 | Rust | `Iterator` trait | `next() → Option<Item>` |
-| Go | Convention | `HasNext() bool` + `Next() T` |
+| Go | Explicit iterator in these examples | `HasNext() bool` + `Next() T`; modern Go also supports range over iterator functions |
 
 ### When to Use
 

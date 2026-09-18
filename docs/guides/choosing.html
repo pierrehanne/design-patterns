@@ -1,0 +1,32 @@
+<p class="lead">Choose by what varies: construction, structure, or collaboration. Then check the cost of the boundary you are about to introduce.</p>
+<h2 id="first-question">Start with the pressure</h2>
+<table><thead><tr><th>Observed pressure</th><th>Candidate</th><th>Try first</th></tr></thead><tbody>
+<tr><td>Construction choices leak into many callers</td><td><a href="factory.html">Factory</a></td><td>One construction function</td></tr>
+<tr><td>Several products must vary as a family</td><td><a href="abstract-factory.html">Abstract Factory</a></td><td>A family configuration record</td></tr>
+<tr><td>Partially configured objects escape</td><td><a href="builder.html">Builder</a></td><td>A validated constructor</td></tr>
+<tr><td>A foreign interface leaks through your domain</td><td><a href="adapter.html">Adapter</a></td><td>A small translation function</td></tr>
+<tr><td>Optional behaviors form many combinations</td><td><a href="decorator.html">Decorator</a></td><td>Composed functions</td></tr>
+<tr><td>A lifecycle conditional is repeated</td><td><a href="state.html">State</a></td><td>An enum and transition table</td></tr>
+<tr><td>An algorithm changes independently of its caller</td><td><a href="strategy.html">Strategy</a></td><td>A function parameter</td></tr>
+<tr><td>Changes need to notify several consumers</td><td><a href="observer.html">Observer</a></td><td>Explicit calls with clear ownership</td></tr>
+<tr><td>You need to revisit an action or prior state</td><td><a href="command.html">Command</a> / <a href="memento.html">Memento</a></td><td>A bounded history of values</td></tr>
+<tr><td>Repeated data dominates measured memory use</td><td><a href="flyweight.html">Flyweight</a></td><td>Immutable shared constants</td></tr>
+</tbody></table>
+<h2 id="wrappers">Adapter, Decorator, Proxy, or Facade?</h2>
+<p>All can wrap another object, so structure alone does not identify intent. Adapter translates a contract. Decorator adds behavior while keeping the component contract. Proxy controls access to a service. Facade offers a simpler use-case interface over several operations. One object can serve more than one role, but naming each policy separately often makes composition easier to test.</p>
+<p>For a weather integration, an adapter translates the provider payload, a proxy caches results, a decorator measures latency, and a facade combines weather with travel planning. Write the order down: measuring outside the cache reports client latency, while measuring inside reports provider latency.</p>
+<h2 id="behavior">Strategy, State, or Template Method?</h2>
+<p>Ask who chooses the behavior and why. Strategy is chosen as an alternative algorithm. State follows an object’s lifecycle and valid transitions. Template Method fixes a sequence while allowing selected steps to vary. A context holding an interface could implement any of these; the reason for switching determines which explanation fits.</p>
+<p>For document processing, an export format can be a strategy, publication status can be a state, and a fixed read-parse-analyze workflow can be a template method. Keep these decisions distinct unless they truly change together.</p>
+<h2 id="history">Command or Memento?</h2>
+<p>Command stores an action and possibly an inverse; Memento stores a snapshot. A short edit on a large document may make command history economical, but an irreversible local transformation may be easier to undo from a snapshot. A hybrid command can capture a memento before execution.</p>
+<p>Neither guarantees correct undo after unrelated concurrent edits. Identify the version of the receiver the history applies to. For external side effects, use explicit compensating actions with their own failure states.</p>
+<h2 id="extension">Visitor or ordinary polymorphism?</h2>
+<p>Draw a matrix of element types against operations. Visitor favors adding a new operation as a column: one new visitor covers existing elements. Adding a type creates a new row that every visitor must handle. Ordinary methods often make adding types easier but distribute a new operation across those types. Choose the direction of change your system actually experiences.</p>
+<h2 id="decision-record">Leave a short decision record</h2>
+<p>Record the pressure, selected boundary, rejected simpler alternative, expected extension, and cost. Include one example of a future change that would make you reconsider. This is more useful to a maintainer than a diagram labeled only with pattern names.</p>
+<pre><code>Context: two providers expose incompatible weather payloads.
+Decision: adapt each provider into our Forecast value.
+Alternative: translate fields in every screen.
+Cost: adapters must track provider schema changes.
+Revisit when: freshness or provenance differs enough to change Forecast.</code></pre>

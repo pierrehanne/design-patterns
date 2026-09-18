@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // ---------------------------------------------------------------------------
@@ -60,9 +59,9 @@ func (e *EncryptionDecorator) shiftChar(c rune, forward bool) rune {
 	if c >= 32 && c < 127 {
 		var shifted int
 		if forward {
-			shifted = int(((int(c)-32+e.shift)%95)+32)
+			shifted = int(((int(c) - 32 + e.shift) % 95) + 32)
 		} else {
-			shifted = int(((int(c)-32-e.shift+95)%95)+32)
+			shifted = int(((int(c) - 32 - e.shift + 95) % 95) + 32)
 		}
 		return rune(shifted)
 	}
@@ -110,9 +109,8 @@ func rleEncode(data string) string {
 		if i < len(runes) && runes[i] == runes[i-1] {
 			count++
 		} else {
-			if count > 1 {
-				result.WriteString(strconv.Itoa(count))
-			}
+			result.WriteString(strconv.Itoa(count))
+			result.WriteByte(':')
 			result.WriteRune(runes[i-1])
 			count = 1
 		}
@@ -122,19 +120,18 @@ func rleEncode(data string) string {
 
 func rleDecode(data string) string {
 	var result strings.Builder
-	num := ""
-
-	for _, c := range data {
-		if unicode.IsDigit(c) {
-			num += string(c)
-		} else {
-			count := 1
-			if num != "" {
-				count, _ = strconv.Atoi(num)
-				num = ""
-			}
-			result.WriteString(strings.Repeat(string(c), count))
+	runes := []rune(data)
+	for position := 0; position < len(runes); {
+		start := position
+		for position < len(runes) && runes[position] >= '0' && runes[position] <= '9' {
+			position++
 		}
+		count, err := strconv.Atoi(string(runes[start:position]))
+		if err != nil || count < 1 || position+1 >= len(runes) || runes[position] != ':' {
+			panic("invalid run-length record")
+		}
+		result.WriteString(strings.Repeat(string(runes[position+1]), count))
+		position += 2
 	}
 	return result.String()
 }

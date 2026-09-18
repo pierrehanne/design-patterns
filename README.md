@@ -1,170 +1,101 @@
-# Design Patterns — A Complete Guide
+# Design Patterns Field Guide
 
-## What Are Design Patterns?
+**23 pattern topics. Four languages. 92 runnable examples.** A practical engineering book about the problems patterns solve, their tradeoffs, and the simpler alternatives worth considering first.
 
-Design patterns are **proven solutions to recurring problems** in software design. Think of them as blueprints — not finished code, but templates you adapt to your specific situation.
+The accompanying GitHub Pages book includes a chapter for every pattern, complete source in Python, TypeScript, Rust, and Go, and five guides on design judgment, pattern selection, production concerns, language differences, and deliberate practice. It supports full-text search, category filtering, source downloads, dark mode, mobile navigation, and printing. Reading does not require JavaScript.
 
-They were popularized by the "Gang of Four" (GoF) in their 1994 book *Design Patterns: Elements of Reusable Object-Oriented Software*. Every senior developer uses them, often without even naming them.
+[Read the book](https://pierrehanne.github.io/design-patterns/) · [Build and publish the website](docs/README.md) · [Contribute](CONTRIBUTING.md)
 
-### Why Should You Care?
+## Explore the examples
 
-1. **You don't reinvent the wheel** — These problems have been solved thousands of times
-2. **Common vocabulary** — Say "Observer pattern" and every developer knows what you mean
-3. **Better architecture** — Patterns guide you toward flexible, maintainable code
-4. **Job interviews** — Design patterns are a staple of technical interviews
+| Family | Focus | Topics |
+| --- | --- | --- |
+| [Creational](creational-design-pattern/README.md) | Creation and ownership | Singleton, Factory, Abstract Factory, Builder, Prototype |
+| [Structural](structural-design-pattern/README.md) | Composition and boundaries | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
+| [Behavioral](behavioral-design-pattern/README.md) | Algorithms and collaboration | Chain of Responsibility, Command, Interpreter, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
 
-### How to Read This Repository
+Each source file contains its own explanation and executable demonstration. These are isolated teaching examples: payment, weather, chat, and database services are simulated. They illustrate design decisions, not complete production integrations. The book identifies limitations and useful next steps for each example.
 
-Each pattern is implemented in **4 languages**: Python, TypeScript, Rust, and Go. Every file contains:
-- A header explaining the pattern's intent and when to use it
-- A realistic, practical example (not abstract `Shape`/`Animal` toy code)
-- Inline comments explaining the non-obvious parts
-- A runnable `main` section you can execute to see it in action
+The factory examples implement **simple factories**. The corresponding chapter distinguishes them from canonical **Factory Method**, where a creator workflow calls an overridable construction method.
 
----
+## Run an example
 
-## The Three Categories
+Only install the toolchain for the language you want to explore.
 
-Design patterns are divided into three families based on what kind of problem they solve:
+| Language | Supported baseline | Dependencies |
+| --- | --- | --- |
+| Python | 3.11+ | Standard library |
+| TypeScript | Node.js 22, TypeScript 5.7.3 | `npm ci` installs the pinned compiler |
+| Rust | 1.70+, edition 2021 | Standard library; no Cargo project needed |
+| Go | 1.23+ | Standard library; each file is a separate program |
 
-| Category | Question It Answers | Example Problem |
-|----------|-------------------|-----------------|
-| **[Creational](creational-design-pattern/README.md)** | *How do I create objects?* | "I need exactly one database connection shared everywhere" |
-| **[Structural](structural-design-pattern/README.md)** | *How do I compose objects?* | "I need to make a legacy API work with my new code" |
-| **[Behavioral](behavioral-design-pattern/README.md)** | *How do objects communicate?* | "I need to notify 10 components when data changes" |
+```sh
+python3 behavioral-design-pattern/strategy-pattern/strategy.py
 
----
+go run behavioral-design-pattern/strategy-pattern/strategy.go
 
-## Quick Reference — All 23 Patterns at a Glance
+rustc --edition=2021 behavioral-design-pattern/strategy-pattern/strategy.rs -o /tmp/strategy
+/tmp/strategy
 
-### Creational Patterns — Object Creation
-
-| Pattern | One-Line Summary | Use When... |
-|---------|-----------------|-------------|
-| **Singleton** | One instance, global access | You need exactly one shared resource (config, pool, logger) |
-| **Factory Method** | Create without specifying exact class | You want to decouple "what" from "how" in object creation |
-| **Abstract Factory** | Create families of related objects | You need themed/consistent groups (dark UI, light UI) |
-| **Builder** | Step-by-step complex construction | Constructors would have 5+ parameters, some optional |
-| **Prototype** | Clone existing objects | Creating from scratch is expensive; copy and tweak instead |
-
-### Structural Patterns — Object Composition
-
-| Pattern | One-Line Summary | Use When... |
-|---------|-----------------|-------------|
-| **Adapter** | Convert one interface to another | Integrating legacy code or third-party libraries |
-| **Bridge** | Separate abstraction from implementation | You'd otherwise need N×M subclasses |
-| **Composite** | Tree structures with uniform interface | Files/folders, org charts, UI component trees |
-| **Decorator** | Add behavior by wrapping | You need mix-and-match features without subclass explosion |
-| **Facade** | Simple interface to complex subsystem | You want one function instead of coordinating 5 services |
-| **Flyweight** | Share data to save memory | Thousands of similar objects (particles, characters) |
-| **Proxy** | Control access to another object | Caching, access control, lazy loading, logging |
-
-### Behavioral Patterns — Object Communication
-
-| Pattern | One-Line Summary | Use When... |
-|---------|-----------------|-------------|
-| **Chain of Responsibility** | Pass request along a handler chain | Middleware, escalation, event pipelines |
-| **Command** | Encapsulate request as object | Undo/redo, queuing, macro recording |
-| **Interpreter** | Evaluate a language/grammar | Expression parsers, query languages, rule engines |
-| **Iterator** | Sequential access without exposing internals | Custom collections with multiple traversal strategies |
-| **Mediator** | Central hub for object communication | Chat rooms, air traffic control, UI component coordination |
-| **Memento** | Capture and restore state | Save/load systems, undo snapshots, checkpoints |
-| **Observer** | Notify dependents of state changes | Event systems, pub/sub, reactive UIs |
-| **State** | Change behavior when state changes | Workflows, vending machines, replacing complex if/else chains |
-| **Strategy** | Swap algorithms at runtime | Payment methods, sorting algorithms, compression options |
-| **Template Method** | Define algorithm skeleton, let subclasses fill in steps | ETL pipelines, test frameworks, data processing |
-| **Visitor** | Add operations to objects without modifying them | Exporters, analyzers, serializers for a fixed set of types |
-
----
-
-## How to Run the Examples
-
-### Python
-```bash
-python creational-design-pattern/singleton-pattern/singleton.py
+npm ci
+npx tsc --project tsconfig.json
+node .build/typescript/behavioral-design-pattern/strategy-pattern/strategy.js
 ```
 
-### TypeScript (with ts-node or Deno)
-```bash
-npx ts-node creational-design-pattern/singleton-pattern/singleton.ts
-# or
-deno run creational-design-pattern/singleton-pattern/singleton.ts
+Compile Go and Rust examples separately: each has its own main function. TypeScript examples are modules so their educational names do not collide with each other or browser globals.
+
+## Check the repository
+
+```sh
+# One language, or use --language all with all four toolchains installed
+python3 scripts/check_examples.py --language python
+python3 scripts/check_examples.py --language typescript
+python3 scripts/check_examples.py --language rust
+python3 scripts/check_examples.py --language go
+
+# Targeted Python regressions
+python3 -m unittest discover -s tests -v
+
+# Generate the book and validate links, anchors, search, and source fidelity
+python3 scripts/build_site.py
+python3 scripts/check_site.py
 ```
 
-### Rust
-```bash
-rustc creational-design-pattern/singleton-pattern/singleton.rs -o singleton && ./singleton
+Checks fail when a required toolchain is missing. Compiled check artifacts live in temporary directories. Regression checks cover concurrent singleton initialization and data round trips through decorators, including digits, delimiters, and Unicode. Go also runs the singleton under the race detector.
+
+## Preview the book
+
+The website build needs only Python 3.11+; it has no generator dependencies.
+
+```sh
+python3 scripts/build_site.py
+python3 -m http.server 8000 --bind 127.0.0.1 --directory _site
 ```
 
-### Go
-```bash
-go run creational-design-pattern/singleton-pattern/singleton.go
+Open **http://127.0.0.1:8000**. Chapter code is embedded directly from the source files at build time, with byte-for-byte source downloads. Generated output is ignored by Git.
+
+GitHub Actions checks all four languages and the site before deploying from `main`. Initial setup requires **Settings → Pages → Source → GitHub Actions**. See [publishing instructions](docs/README.md#publish-on-github-pages).
+
+## Study with a purpose
+
+Start with Strategy, Adapter, Factory, Decorator, and Observer. Then explore State, Command, and Memento together, followed by Composite, Iterator, and Visitor. Read the problem, trace a call, challenge an edge case, and compare a second language. Each book chapter includes an exercise and tests worth writing.
+
+Patterns are a vocabulary for decisions. Use them when they clarify a real requirement; a small function or plain value is often the better starting point.
+
+## Repository layout
+
+```text
+design-patterns/
+├── creational-design-pattern/   # 5 topics × 4 languages
+├── structural-design-pattern/   # 7 patterns × 4 languages
+├── behavioral-design-pattern/   # 11 patterns × 4 languages
+├── docs/
+│   ├── book.json                # Curated pattern chapters
+│   ├── guides/                  # Five authored engineering essays
+│   └── assets/                  # Responsive styles and progressive enhancement
+├── scripts/                    # Example checks and static book build/validation
+├── tests/                      # Regression contracts and shared fixtures
+└── .github/workflows/ci.yml     # Checks and GitHub Pages deployment
 ```
 
----
-
-## How to Study Design Patterns
-
-1. **Start with the intent** — Read the "When to use" section before the code
-2. **Understand the problem first** — What happens WITHOUT the pattern?
-3. **Trace the code** — Follow the flow from `main` through each participant
-4. **Compare languages** — See how the same concept adapts to different paradigms
-5. **Don't memorize** — Understand the principle, not the exact implementation
-6. **Build something** — Pick a pattern and use it in a personal project
-
-### Recommended Learning Order
-
-Start with the most common patterns you'll encounter in real codebases:
-
-1. **Strategy** — Simplest behavioral pattern, very common
-2. **Observer** — Foundation of event-driven programming
-3. **Factory** — Most common creational pattern
-4. **Singleton** — Simple but controversial (learn why)
-5. **Decorator** — Understand wrapping and composition
-6. **Adapter** — You'll use this every time you integrate external code
-7. **Builder** — Essential for APIs and configuration
-8. **Command** — Foundation of undo/redo
-9. **State** — Elegantly replaces complex conditionals
-10. Then explore the rest as needed
-
----
-
-## Project Structure
-
-```
-engineering/
-├── README.md                          ← You are here
-├── creational-design-pattern/
-│   ├── README.md                      ← Creational patterns explained
-│   ├── singleton-pattern/
-│   │   ├── singleton.py
-│   │   ├── singleton.ts
-│   │   ├── singleton.rs
-│   │   └── singleton.go
-│   ├── factory-pattern/
-│   ├── abstract-pattern/
-│   ├── builder-pattern/
-│   └── prototype-pattern/
-├── structural-design-pattern/
-│   ├── README.md                      ← Structural patterns explained
-│   ├── adapter-pattern/
-│   ├── bridge-pattern/
-│   ├── composite-pattern/
-│   ├── decorator-pattern/
-│   ├── facade-pattern/
-│   ├── flyweight-pattern/
-│   └── proxy-pattern/
-└── behavioral-design-pattern/
-    ├── README.md                      ← Behavioral patterns explained
-    ├── chain-of-responsibility-pattern/
-    ├── command-pattern/
-    ├── interpreter-pattern/
-    ├── iterator-pattern/
-    ├── mediator-pattern/
-    ├── memento-pattern/
-    ├── observer-pattern/
-    ├── state-pattern/
-    ├── strategy-pattern/
-    ├── template-pattern/
-    └── visitor-pattern/
-```
+[MIT license](LICENSE).

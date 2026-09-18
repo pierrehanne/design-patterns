@@ -164,3 +164,6 @@ buildLoginForm(factory);
 
 console.log("\nBuilding login form with light theme:");
 buildLoginForm(new LightThemeFactory());
+
+// Keep this standalone example out of the global script namespace.
+export {};

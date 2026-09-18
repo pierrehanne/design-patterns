@@ -117,8 +117,8 @@ fn main() {
             particle_type: factory.get("fire", "sprites/fire.png", "burn_loop", "#FF4500"),
             x: i % 1920,
             y: (i * 7) % 1080,
-            scale: 0.5 + (i as f32 % 15) / 10.0,
-            opacity: 0.3 + (i as f32 % 7) / 10.0,
+            scale: 0.5 + (i as f32 % 15.0) / 10.0,
+            opacity: 0.3 + (i as f32 % 7.0) / 10.0,
         });
     }
 
@@ -128,8 +128,8 @@ fn main() {
             particle_type: factory.get("smoke", "sprites/smoke.png", "fade_up", "#808080"),
             x: (i * 3) % 1920,
             y: (i * 11) % 1080,
-            scale: 1.0 + (i as f32 % 20) / 10.0,
-            opacity: 0.1 + (i as f32 % 4) / 10.0,
+            scale: 1.0 + (i as f32 % 20.0) / 10.0,
+            opacity: 0.1 + (i as f32 % 4.0) / 10.0,
         });
     }
 
@@ -139,8 +139,8 @@ fn main() {
             particle_type: factory.get("spark", "sprites/spark.png", "flash", "#FFD700"),
             x: (i * 9) % 1920,
             y: (i * 5) % 1080,
-            scale: 0.2 + (i as f32 % 6) / 10.0,
-            opacity: 0.5 + (i as f32 % 5) / 10.0,
+            scale: 0.2 + (i as f32 % 6.0) / 10.0,
+            opacity: 0.5 + (i as f32 % 5.0) / 10.0,
         });
     }
 

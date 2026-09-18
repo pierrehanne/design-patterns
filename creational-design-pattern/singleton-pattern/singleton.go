@@ -28,7 +28,7 @@ import (
 
 // ConfigurationManager holds application-wide settings.
 type ConfigurationManager struct {
-	mu       sync.RWMutex      // Protects concurrent read/write to settings
+	mu       sync.RWMutex // Protects concurrent read/write to settings
 	settings map[string]string
 }
 
@@ -93,17 +93,23 @@ func main() {
 
 	// Demonstrate goroutine safety
 	var wg sync.WaitGroup
-	pointers := make(chan uintptr, 10)
+	pointers := make(chan *ConfigurationManager, 10)
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			c := GetConfig()
-			pointers <- uintptr(fmt.Sprintf("%p", c)[2:][0]) // just to show it's same
+			pointers <- c
 		}()
 	}
 	wg.Wait()
 	close(pointers)
+
+	allSame := true
+	for c := range pointers {
+		allSame = allSame && c == configA
+	}
+	fmt.Println("All goroutines got same instance?", allSame)
 
 	fmt.Println("All settings:", configA.All())
 }

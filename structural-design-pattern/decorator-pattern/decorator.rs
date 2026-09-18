@@ -102,10 +102,7 @@ impl CompressionDecorator {
             if i < chars.len() && chars[i] == chars[i - 1] {
                 count += 1;
             } else {
-                if count > 1 {
-                    result.push_str(&count.to_string());
-                }
-                result.push(chars[i - 1]);
+                result.push_str(&format!("{}:{}", count, chars[i - 1]));
                 count = 1;
             }
         }
@@ -114,18 +111,17 @@ impl CompressionDecorator {
 
     fn rle_decode(data: &str) -> String {
         let mut result = String::new();
-        let mut num = String::new();
-
-        for c in data.chars() {
-            if c.is_ascii_digit() {
-                num.push(c);
-            } else {
-                let count: usize = num.parse().unwrap_or(1);
-                for _ in 0..count {
-                    result.push(c);
-                }
-                num.clear();
+        let mut chars = data.chars().peekable();
+        while chars.peek().is_some() {
+            let mut num = String::new();
+            while chars.peek().is_some_and(|c| c.is_ascii_digit()) {
+                num.push(chars.next().unwrap());
             }
+            assert_eq!(chars.next(), Some(':'), "Invalid run-length record");
+            let count: usize = num.parse().expect("Invalid run length");
+            assert!(count > 0, "Run length must be positive");
+            let character = chars.next().expect("Missing run character");
+            result.extend(std::iter::repeat(character).take(count));
         }
         result
     }

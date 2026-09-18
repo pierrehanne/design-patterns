@@ -123,3 +123,6 @@ console.log(
 
 console.log("\nSample renders:");
 particles.slice(0, 5).forEach((p) => console.log(`  ${renderParticle(p)}`));
+
+// Keep this standalone example out of the global script namespace.
+export {};

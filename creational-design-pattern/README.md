@@ -1,5 +1,7 @@
 # Creational Design Patterns
 
+For complete code walkthroughs, tradeoffs, exercises, and cross-language guidance, read the [field guide](https://pierrehanne.github.io/design-patterns/).
+
 ## What Are Creational Patterns?
 
 Creational patterns deal with **how objects are created**. In simple code, you write `new Thing()` everywhere. But as systems grow, object creation becomes complex:
@@ -22,7 +24,7 @@ When client code doesn't care about construction details, you can change how obj
 
 ### The Problem
 
-You have a resource that must exist exactly once — a database connection pool, a configuration manager, a logger. If multiple instances exist, they'd conflict with each other or waste memory.
+You may have a resource with one intended process-local owner. A configuration store, pool, or logger can often be constructed once and injected instead of enforcing global access. A Singleton does not coordinate multiple processes or machines.
 
 ```
 BAD: Multiple instances, inconsistent state
@@ -79,7 +81,7 @@ GOOD: Single instance, consistent state
 
 ---
 
-## Pattern 2: Factory Method
+## Pattern 2: Factory Method and Simple Factories
 
 ### The Problem
 
@@ -127,7 +129,7 @@ Client code ──────▶ │ NotificationFactory │
 
 ### Adding a New Type
 
-Just create a new class and register it with the factory. **Zero changes to existing code.** This is the Open/Closed Principle in action.
+The Python and TypeScript registries accept a new constructor without changing the selector. The Rust `match` and Go `switch` must be extended. Canonical **Factory Method** instead lets a creator workflow call an overridable construction method; these files demonstrate **simple factories**.
 
 ### When to Use
 
@@ -233,7 +235,7 @@ request = (HttpRequestBuilder()
 
 1. **Builder** accumulates configuration via chained method calls
 2. Each method returns `self`/`this` for chaining
-3. `.build()` validates and produces the final immutable object
+3. `.build()` validates the example’s rules and produces the request; nested mutability and validation differ by language
 4. **Director** (optional) provides presets for common configurations
 
 ### When to Use

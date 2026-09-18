@@ -71,3 +71,6 @@ configA.set("log_level", "DEBUG");
 console.log(`configB database_url: ${configB.get("database_url")}`);
 console.log(`Same instance? ${configA === configB}`); // true
 console.log("All settings:", configB.all());
+
+// Keep this standalone example out of the global script namespace.
+export {};

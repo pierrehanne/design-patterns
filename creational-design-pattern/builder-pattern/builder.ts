@@ -200,3 +200,6 @@ const postRequest = RequestDirector.authenticatedPost(
   '{"item": "laptop", "qty": 1}'
 ).build();
 console.log(formatRequest(postRequest));
+
+// Keep this standalone example out of the global script namespace.
+export {};

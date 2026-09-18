@@ -1,0 +1,22 @@
+<p class="lead">Compare the decision each language expresses, not the number of classes it uses. Idiomatic implementations need not look identical.</p>
+<h2 id="python">Python: small contracts and explicit ownership</h2>
+<p>Abstract base classes make required operations visible; Protocol supports structural typing without requiring inheritance. A callable often suffices for a stateless Strategy or Command. Dataclasses keep values readable, but frozen fields do not make a nested dictionary immutable. Copying and locking remain semantic choices.</p>
+<p>These examples require Python 3.11 or later because they use typing.Self. They depend only on the standard library. The checker starts each script in its own process, so demonstration code does not share singleton state across examples.</p>
+<h2 id="typescript">TypeScript: modules and runtime contracts</h2>
+<p>Interfaces describe shape and disappear at runtime. Validate external data even when a type annotation exists. readonly prevents certain assignments during type checking; it does not deeply freeze objects or defend against untyped callers.</p>
+<p>Every example is an independent module using export {}. This prevents educational names such as Notification, File, and Element from merging with browser globals or other examples. The checked workflow compiles all examples under strict mode and runs the resulting JavaScript with Node.</p>
+<h2 id="rust">Rust: make sharing and closed sets visible</h2>
+<p>Traits describe behavior, enums describe closed alternatives, and ownership describes who can use or mutate a value. The State and Interpreter examples show why an enum can be a clearer fit than translating a class hierarchy literally. Trait objects allow runtime dispatch when alternatives need that flexibility.</p>
+<p>Rc shares ownership within one thread. RefCell moves borrowing checks to runtime; it does not make an object thread-safe. OnceLock and Mutex solve different parts of singleton initialization and access. The examples compile independently with the 2021 edition and need Rust 1.70 or later.</p>
+<h2 id="go">Go: interfaces at the consumer boundary</h2>
+<p>Small interfaces allow implementations to satisfy contracts implicitly. Composition and functions express many patterns without inheritance. sync.Once ensures one-time initialization; a separate synchronization policy protects later mutable access. A copied struct can still share maps, slices, and pointers.</p>
+<p>The examples use explicit iterator objects to make traversal state visible. Go 1.23 added range over iterator functions, so modern code can expose iteration through that mechanism as well. See the <a href="https://go.dev/doc/go1.23">official Go 1.23 release notes</a>. CI uses Go 1.23, and each standalone source file is run separately.</p>
+<h2 id="comparison">Questions to ask while comparing</h2>
+<ul><li>Is the implementation set open or closed? Would an enum or interface express it better?</li><li>Is dispatch selected at compile time or runtime? Is runtime replacement required?</li><li>Does a copy duplicate data, or share another reference to it?</li><li>Who owns mutable state, and what concurrent access is allowed?</li><li>How are absence, failure, and invalid input represented?</li><li>Do string positions mean bytes, code points, UTF-16 units, or visible graphemes?</li></ul>
+<p>The four files are parallel teaching examples, not a promise of identical output or edge-case behavior. Each chapter calls out consequential differences. Do not use one language’s passing demo as evidence that the other implementations satisfy the same complete contract.</p>
+<h2 id="run">Run and compare</h2>
+<pre><code>python3 scripts/check_examples.py --language python
+python3 scripts/check_examples.py --language typescript
+python3 scripts/check_examples.py --language rust
+python3 scripts/check_examples.py --language go</code></pre>
+<p>Install the selected toolchain first. For TypeScript, run npm ci to install the repository’s pinned compiler. The checker reports missing tools as failures and uses a temporary directory for generated files.</p>

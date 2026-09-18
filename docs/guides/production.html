@@ -1,0 +1,27 @@
+<p class="lead">The examples isolate a design idea. Turning that idea into a service means specifying what happens under failure, concurrency, and change.</p>
+<h2 id="ownership">Make ownership and lifetime explicit</h2>
+<p>For every collaborator, ask who creates it, who may mutate it, and who closes it. Singleton makes lifetime long; Observer can accidentally make it longer by retaining subscribers; Flyweight intentionally shares objects; Prototype intentionally copies them. Those choices should appear in contracts and tests.</p>
+<p>Consider a cached forecast containing a mutable list. Returning the same reference lets one caller change another caller’s data. An immutable value, a defensive copy, or an explicit ownership transfer each solves a different version of this problem. A readonly reference alone does not recursively freeze its contents.</p>
+<h2 id="failures">Model partial failure</h2>
+<p>A facade that calls four services has at least four failure boundaries. List the side effects completed before each boundary. If inventory reservation succeeds but payment fails, does reservation expire, get released immediately, or remain attached to a pending order? A method returning false cannot express every operationally distinct state.</p>
+<p>For retryable actions, define an operation identifier and the scope of deduplication. A Command object can describe an attempt, but executing it twice still repeats effects unless the receiver provides idempotency. Compensation is another action that can also fail; it is not a time machine.</p>
+<h2 id="concurrency">Separate synchronization from business invariants</h2>
+<p>The repaired Python singleton safely publishes initialized state and locks individual settings operations. A get followed by set is still two operations. If a business invariant spans them, expose an atomic operation or use a transactional store rather than assuming the pattern supplies one.</p>
+<p>A proxy can receive several concurrent cache misses for one key. An observer callback can reenter the subject. Two reviewers can transition the same document. Write the allowed interleavings before deciding whether a lock, queue, version check, or immutable snapshot is the right mechanism.</p>
+<h2 id="tests">Test contracts, not class diagrams</h2>
+<table><thead><tr><th>Boundary</th><th>Useful property</th></tr></thead><tbody>
+<tr><td>Decorator</td><td>Reading a written value recovers the original for every supported input.</td></tr>
+<tr><td>Prototype / Memento</td><td>Later mutation does not change an independent copy or saved snapshot.</td></tr>
+<tr><td>Factory / Strategy</td><td>Every implementation preserves the client contract.</td></tr>
+<tr><td>State</td><td>Every state/action pair has a defined result.</td></tr>
+<tr><td>Command</td><td>Undo restores the expected receiver version; a new edit clears redo.</td></tr>
+<tr><td>Proxy</td><td>Hits avoid delegation, expiry refreshes, and denied calls have no protected side effect.</td></tr>
+<tr><td>Iterator</td><td>Traversal terminates, respects scope, and does not repeat vertices unexpectedly.</td></tr>
+</tbody></table>
+<p>A runnable demo is a smoke check, not a proof of those properties. This repository separately runs all examples and keeps targeted regression tests for repaired behavior. Extend those tests when you strengthen a contract.</p>
+<h2 id="measurement">Measure where the policy acts</h2>
+<p>Instrument latency, errors, and resource use at meaningful boundaries. A cache should expose hits, misses, refresh failures, and retained size. A chain should report which handler accepted a request. State transitions should identify the prior version and outcome. Avoid recording sensitive payloads just because a logging decorator can see them.</p>
+<p>Measure before adding Flyweight or a cache. Report both the baseline and workload distribution. A high hit rate on a toy workload does not establish a useful production tradeoff.</p>
+<h2 id="case-study">A worked design: resilient order checkout</h2>
+<ol><li><strong>Keep the use case small.</strong> An order facade accepts an order ID and validated line items. Its result distinguishes completed, pending, and rejected.</li><li><strong>Contain provider differences.</strong> A payment adapter translates the provider’s API into the application’s payment contract. A strategy selects the provider only if the contracts are truly substitutable.</li><li><strong>Persist lifecycle.</strong> An explicit state model records reservation, payment, and shipping progress with version checks.</li><li><strong>Represent work.</strong> Commands carry stable operation IDs. Durable storage and a worker execute pending work; the pattern alone supplies neither.</li><li><strong>Publish outcomes deliberately.</strong> A local observer can update an in-process view. Durable notifications require a persistence and delivery design, such as storing an event with the order update.</li><li><strong>Prove recovery.</strong> Stop the workflow after every side effect, restart it, and verify the final order does not double-charge or lose its recovery path.</li></ol>
+<p>Do not add all six layers to a small synchronous tool. The case study shows where each boundary earns its cost as requirements grow. Keep the simplest version that meets the actual contract.</p>

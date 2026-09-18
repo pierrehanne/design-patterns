@@ -118,3 +118,6 @@ console.log(`\nTotal project size: ${root.size()} bytes`);
 console.log(`Source code size: ${src.size()} bytes`);
 console.log(`\nSearch for 'test': ${root.search("test")}`);
 console.log(`Search for 'main': ${root.search("main")}`);
+
+// Keep this standalone example out of the global script namespace.
+export {};

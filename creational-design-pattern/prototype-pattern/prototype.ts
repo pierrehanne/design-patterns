@@ -151,3 +151,6 @@ console.log(teamMemo.toString());
 const original = registry.create("report");
 console.log("\n=== Fresh clone (proves original is untouched) ===");
 console.log(original.toString());
+
+// Keep this standalone example out of the global script namespace.
+export {};

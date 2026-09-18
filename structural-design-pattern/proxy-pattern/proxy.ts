@@ -163,3 +163,6 @@ try {
 } catch (e: any) {
   console.log(`  ${e.message}`);
 }
+
+// Keep this standalone example out of the global script namespace.
+export {};

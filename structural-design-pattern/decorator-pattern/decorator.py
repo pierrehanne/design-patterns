@@ -101,7 +101,7 @@ class EncryptionDecorator(DataSourceDecorator):
 
 
 class CompressionDecorator(DataSourceDecorator):
-    """Adds simple RLE compression for runs of repeated characters."""
+    """Run-length encoding: each record is a count, colon, and one character."""
 
     def write(self, data: str) -> str:
         compressed = self._rle_encode(data)
@@ -120,22 +120,26 @@ class CompressionDecorator(DataSourceDecorator):
             if c == current:
                 count += 1
             else:
-                result.append(f"{count}{current}" if count > 1 else current)
+                result.append(f"{count}:{current}")
                 current, count = c, 1
-        result.append(f"{count}{current}" if count > 1 else current)
+        result.append(f"{count}:{current}")
         return "".join(result)
 
     @staticmethod
     def _rle_decode(data: str) -> str:
-        result, num = [], ""
-        for c in data:
-            if c.isdigit():
-                num += c
-            else:
-                count = int(num) if num else 1
-                result.append(c * count)
-                num = ""
+        result, position = [], 0
+        while position < len(data):
+            delimiter = data.index(":", position)
+            count_text = data[position:delimiter]
+            if not count_text.isascii() or not count_text.isdecimal():
+                raise ValueError("Invalid run length")
+            count = int(count_text)
+            if count < 1 or delimiter + 1 >= len(data):
+                raise ValueError("Incomplete run-length record")
+            result.append(data[delimiter + 1] * count)
+            position = delimiter + 2
         return "".join(result)
+
 
 
 class LoggingDecorator(DataSourceDecorator):

@@ -132,3 +132,6 @@ for (const ticket of tickets) {
   const result = auto.handle(ticket);
   console.log(`    -> Handled by: ${result.handledBy}\n`);
 }
+
+// Keep this standalone example out of the global script namespace.
+export {};

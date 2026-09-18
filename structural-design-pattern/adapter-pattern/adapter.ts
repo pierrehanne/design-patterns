@@ -131,3 +131,6 @@ processCheckout(adapted, 2999);
 
 console.log("\nRefund through adapted legacy:");
 console.log(adapted.refund("TXN-12345", 2999));
+
+// Keep this standalone example out of the global script namespace.
+export {};

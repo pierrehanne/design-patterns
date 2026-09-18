@@ -1,5 +1,7 @@
 # Structural Design Patterns
 
+For implementation walkthroughs, production limits, and exercises, read the [field guide](https://pierrehanne.github.io/design-patterns/). The decorator uses a toy Caesar transform, not secure encryption; its run-length encoding uses unambiguous count:character records and can expand short inputs.
+
 ## What Are Structural Patterns?
 
 Structural patterns deal with **how objects are composed together** to form larger structures. They help you:
